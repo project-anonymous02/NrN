@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.env
+.env.local
+oauth.json
+client_secret*.json
+.DS_Store
+.vercel/
+node_modules/
