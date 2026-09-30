@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#121212" />
+<title>NRN Music</title>
+<style>
+/* ============================================================
+   NRN Music - Spotify-like dark theme
+   Mobile-first, responsive, safe-area aware
+   ============================================================ */
+
+:root {
+  --bg: #121212;
+  --bg-elevated: #181818;
+  --bg-card: #1e1e1e;
+  --bg-hover: #282828;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-muted: #6a6a6a;
+  --accent: #1DB954;
+  --accent-hover: #1ed760;
+  --danger: #e91429;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --sidebar-w: 250px;
+  --player-h: 72px;
+  --player-h-mobile: 60px;
+  --nav-h: 64px;
+  --transition: 200ms ease;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+img { display: block; max-width: 100%; }
+
+/* ---------- App layout ---------- */
+#app {
+  display: grid;
+  grid-template-rows: 1fr var(--player-h-mobile);
+  height: 100dvh;
+  height: 100vh;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ---------- Sidebar (desktop) ---------- */
+.sidebar {
+  display: none;
+  background: var(--bg);
+  border-right: 1px solid #000;
+  padding: 24px 12px;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.sidebar .logo {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--accent);
+  padding: 0 12px 18px;
+  letter-spacing: -0.5px;
+}
+
+.sidebar button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  transition: background var(--transition), color var(--transition);
+  min-height: 44px;
+}
+
+.sidebar button:hover { color: var(--text-primary); background: var(--bg-hover); }
+.sidebar button.active { color: var(--text-primary); background: var(--bg-elevated); }
+.sidebar button .icon { font-size: 20px; width: 24px; text-align: center; }
+
+/* ---------- Main area ---------- */
+.main {
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: linear-gradient(180deg, #1a1a1a 0%, var(--bg) 320px);
+  padding-bottom: calc(var(--nav-h) + var(--player-h-mobile) + env(safe-area-inset-bottom) + 16px);
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(18, 18, 18, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.topbar .brand {
+  font-weight: 800;
+  color: var(--accent);
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.search-wrap {
+  flex: 1;
+  position: relative;
+  max-width: 480px;
+}
+
+.search-wrap input {
+  width: 100%;
+  height: 44px;
+  border-radius: 22px;
+  border: 1px solid transparent;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  padding: 0 44px 0 44px;
+  font-size: 14px;
+  outline: none;
+  transition: background var(--transition), border var(--transition);
+}
+
+.search-wrap input::placeholder { color: var(--text-muted); }
+.search-wrap input:focus { background: var(--bg-hover); border-color: #3a3a3a; }
+
+.search-wrap .search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.search-wrap .clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.search-wrap .clear-btn.visible { display: flex; }
+.search-wrap .clear-btn:hover { color: var(--text-primary); }
+
+/* ---------- Pages ---------- */
+.page { display: none; padding: 8px 16px 24px; animation: fadeIn 200ms ease; }
+.page.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.section-title {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 20px 0 14px;
+  letter-spacing: -0.3px;
+}
+
+.section-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: -8px 0 14px;
+}
+
+/* ---------- Cards grid ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+  position: relative;
+}
+
+.card:hover { background: var(--bg-hover); transform: translateY(-2px); }
+
+.card .thumb-wrap {
+  position: relative;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  aspect-ratio: 1;
+  margin-bottom: 10px;
+  background: #2a2a2a;
+}
+
+.card .thumb-wrap img { width: 100%; height: 100%; object-fit: cover; }
+
+.card .play-fab {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #000;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity var(--transition), transform var(--transition), background var(--transition);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.45);
+}
+
+.card:hover .play-fab { opacity: 1; transform: translateY(0); }
+.card .play-fab:hover { background: var(--accent-hover); transform: scale(1.06); }
+
+.card .card-title {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.card .card-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- List rows (search results, queue) ---------- */
+.list { display: flex; flex-direction: column; }
+
+.row {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition);
+  min-height: 64px;
+}
+
+.row:hover, .row.playing { background: var(--bg-hover); }
+
+.row .thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: #2a2a2a;
+}
+
+.row .meta { min-width: 0; }
+
+.row .meta .title {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row.playing .meta .title { color: var(--accent); }
+
+.row .meta .artist {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row .actions { display: flex; align-items: center; gap: 4px; }
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 16px;
+  transition: color var(--transition), transform var(--transition);
+}
+
+.icon-btn:hover { color: var(--text-primary); transform: scale(1.08); }
+.icon-btn.liked { color: var(--accent); }
+
+.row .duration { font-size: 12px; color: var(--text-muted); min-width: 40px; text-align: right; }
+
+/* ---------- Empty / loading states ---------- */
+.empty {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.empty .big { font-size: 40px; margin-bottom: 12px; }
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--bg-hover);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+  margin: 32px auto;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- Now Playing page ---------- */
+.np-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 8px;
+  min-height: 60vh;
+  justify-content: center;
+}
+
+.np-art {
+  width: min(78vw, 340px);
+  aspect-ratio: 1;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+  background: #2a2a2a;
+}
+
+.np-art img { width: 100%; height: 100%; object-fit: cover; }
+
+.np-info { text-align: center; max-width: 90%; }
+
+.np-info .title {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.np-info .artist {
+  font-size: 15px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.np-progress { width: min(88vw, 480px); }
+
+.np-times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: #4a4a4a;
+  outline: none;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: var(--text-primary);
+}
+
+.np-controls {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-top: 4px;
+}
+
+.np-controls .ctrl {
+  color: var(--text-secondary);
+  font-size: 22px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition), transform var(--transition);
+}
+
+.np-controls .ctrl:hover { color: var(--text-primary); transform: scale(1.08); }
+
+.np-controls .ctrl.main {
+  width: 68px;
+  height: 68px;
+  background: var(--text-primary);
+  color: #000;
+  font-size: 26px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+.np-controls .ctrl.main:hover { transform: scale(1.06); background: var(--accent); }
+
+.np-extra {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(88vw, 480px);
+  margin-top: 8px;
+}
+
+.np-extra input[type="range"] { flex: 1; }
+.np-extra .vol-icon { color: var(--text-secondary); font-size: 16px; width: 24px; text-align: center; }
+
+/* ---------- Mini player bar ---------- */
+.player-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  z-index: 40;
+  height: var(--player-h-mobile);
+  background: var(--bg-elevated);
+  border-top: 1px solid #2a2a2a;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  transform: translateY(120%);
+  transition: transform 250ms ease;
+}
+
+.player-bar.visible { transform: translateY(0); }
+
+.pb-song {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.pb-song img {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: #2a2a2a;
+  flex-shrink: 0;
+}
+
+.pb-meta { min-width: 0; }
+
+.pb-meta .t {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pb-meta .a {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pb-controls { display: flex; align-items: center; gap: 2px; }
+
+.pb-controls .pbtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  font-size: 18px;
+  transition: transform var(--transition);
+}
+
+.pb-controls .pbtn:hover { transform: scale(1.1); }
+.pb-controls .pbtn.play { background: var(--text-primary); color: #000; margin-left: 4px; }
+.pb-controls .pbtn.play:hover { background: var(--accent); }
+
+.pb-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -2px;
+  height: 2px;
+  background: #3a3a3a;
+}
+
+.pb-progress .fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 200ms linear;
+}
+
+/* ---------- Bottom nav (mobile) ---------- */
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: rgba(18, 18, 18, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid #2a2a2a;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.bottom-nav button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  min-height: 44px;
+  transition: color var(--transition);
+}
+
+.bottom-nav button .icon { font-size: 20px; }
+.bottom-nav button.active { color: var(--text-primary); }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--nav-h) + var(--player-h-mobile) + env(safe-area-inset-bottom) + 16px);
+  transform: translateX(-50%) translateY(20px);
+  background: var(--accent);
+  color: #000;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition), transform var(--transition);
+  z-index: 100;
+  white-space: nowrap;
+  max-width: 90vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- Hidden audio ---------- */
+#audio { display: none; }
+
+/* ============================================================
+   Tablet (480px - 1024px)
+   ============================================================ */
+@media (min-width: 480px) {
+  .grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+  .player-bar { grid-template-columns: 1fr auto auto; }
+}
+
+/* ============================================================
+   Desktop (1024px+)
+   ============================================================ */
+@media (min-width: 1024px) {
+  :root { --player-h: 88px; }
+
+  #app {
+    grid-template-columns: var(--sidebar-w) 1fr;
+    grid-template-rows: 1fr var(--player-h);
+  }
+
+  .sidebar { display: flex; }
+
+  .main { padding-bottom: 24px; }
+
+  .bottom-nav { display: none; }
+
+  .player-bar {
+    bottom: 0;
+    height: var(--player-h);
+    grid-template-columns: minmax(200px, 1fr) auto minmax(200px, 1fr);
+    padding: 0 16px;
+    gap: 16px;
+  }
+
+  .pb-controls { justify-content: center; }
+  .pb-controls .pbtn.prev, .pb-controls .pbtn.next { display: flex; }
+
+  .pb-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    color: var(--text-secondary);
+  }
+
+  .pb-right input[type="range"] { width: 120px; }
+
+  .toast { bottom: calc(var(--player-h) + 20px); }
+
+  .np-wrap { padding: 40px 8px; }
+  .np-art { width: min(60vh, 420px); }
+}
+
+.pb-right { display: none; }
+
+/* Utility */
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Sidebar (desktop only) -->
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">NRN Music</div>
+    <button data-page="home" class="active"><span class="icon">🏠</span>Home</button>
+    <button data-page="search"><span class="icon">🔍</span>Search</button>
+    <button data-page="library"><span class="icon">📚</span>Library</button>
+    <button data-page="nowplaying"><span class="icon">🎧</span>Now Playing</button>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main" id="main">
+
+    <div class="topbar">
+      <div class="brand">NRN</div>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Cari lagu, artis, album..." autocomplete="off" />
+        <button class="clear-btn" id="clearSearch" aria-label="Clear">✕</button>
+      </div>
+    </div>
+
+    <!-- HOME -->
+    <section class="page active" id="page-home">
+      <h2 class="section-title">Selamat datang 👋</h2>
+      <p class="section-sub">Cari lagu favoritmu di tab Search, atau mulai dari trending di bawah.</p>
+      <div class="grid" id="homeGrid"></div>
+      <div class="empty hidden" id="homeEmpty">
+        <div class="big">🎵</div>
+        Backend belum terhubung. Jalankan <code>python app.py</code> lalu refresh.
+      </div>
+    </section>
+
+    <!-- SEARCH -->
+    <section class="page" id="page-search">
+      <h2 class="section-title">Hasil pencarian</h2>
+      <div class="list" id="searchList"></div>
+      <div class="empty" id="searchEmpty">
+        <div class="big">🔍</div>
+        Ketik untuk mencari lagu di YouTube Music.
+      </div>
+    </section>
+
+    <!-- LIBRARY -->
+    <section class="page" id="page-library">
+      <h2 class="section-title">Liked Songs</h2>
+      <div class="list" id="likedList"></div>
+      <div class="empty" id="likedEmpty">
+        <div class="big">💚</div>
+        Lagu yang kamu like akan muncul di sini (tersimpan di perangkat).
+      </div>
+    </section>
+
+    <!-- NOW PLAYING -->
+    <section class="page" id="page-nowplaying">
+      <div class="np-wrap">
+        <div class="np-art"><img id="npArt" src="" alt="" /></div>
+        <div class="np-info">
+          <div class="title" id="npTitle">—</div>
+          <div class="artist" id="npArtist">—</div>
+        </div>
+        <div class="np-progress">
+          <input type="range" id="npSeek" min="0" max="1000" value="0" />
+          <div class="np-times"><span id="npCur">0:00</span><span id="npDur">0:00</span></div>
+        </div>
+        <div class="np-controls">
+          <button class="ctrl" id="npPrev" aria-label="Previous">⏮</button>
+          <button class="ctrl main" id="npPlay" aria-label="Play/Pause">▶</button>
+          <button class="ctrl" id="npNext" aria-label="Next">⏭</button>
+        </div>
+        <div class="np-extra">
+          <span class="vol-icon" id="volIcon">🔊</span>
+          <input type="range" id="npVolume" min="0" max="100" value="80" />
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Mini player bar -->
+<div class="player-bar" id="playerBar">
+  <div class="pb-progress"><div class="fill" id="pbFill"></div></div>
+  <div class="pb-song" id="pbSong">
+    <img id="pbArt" src="" alt="" />
+    <div class="pb-meta">
+      <div class="t" id="pbTitle">—</div>
+      <div class="a" id="pbArtist">—</div>
+    </div>
+  </div>
+  <div class="pb-controls">
+    <button class="pbtn" id="pbLike" aria-label="Like">♡</button>
+    <button class="pbtn prev" id="pbPrev" aria-label="Previous">⏮</button>
+    <button class="pbtn play" id="pbPlay" aria-label="Play/Pause">▶</button>
+    <button class="pbtn next" id="pbNext" aria-label="Next">⏭</button>
+  </div>
+  <div class="pb-right">
+    <span>🔊</span>
+    <input type="range" id="pbVolume" min="0" max="100" value="80" />
+  </div>
+</div>
+
+<!-- Bottom nav (mobile) -->
+<nav class="bottom-nav" id="bottomNav">
+  <button data-page="home" class="active"><span class="icon">🏠</span>Home</button>
+  <button data-page="search"><span class="icon">🔍</span>Search</button>
+  <button data-page="library"><span class="icon">📚</span>Library</button>
+  <button data-page="nowplaying"><span class="icon">🎧</span>Playing</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+<audio id="audio" preload="metadata"></audio>
+
+<script>
+/* ============================================================
+   NRN Music - Frontend logic
+   ============================================================ */
+
+const state = {
+  currentPage: 'home',
+  currentSong: null,
+  isPlaying: false,
+  queue: [],
+  queueIndex: -1,
+  likedSongs: new Set(JSON.parse(localStorage.getItem('nrn_liked') || '[]')),
+  searchResults: [],
+  homeResults: [],
+  audioEl: document.getElementById('audio'),
+};
+
+/* ---------------- API ---------------- */
+async function apiCall(endpoint, method = 'GET', body = null) {
+  const options = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) options.body = JSON.stringify(body);
+  const response = await fetch(`/api/${endpoint}`, options);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+  return data;
+}
+
+/* ---------------- Helpers ---------------- */
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+function fmtTime(sec) {
+  if (!sec || !isFinite(sec)) return '0:00';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function saveLiked() {
+  localStorage.setItem('nrn_liked', JSON.stringify([...state.likedSongs]));
+}
+
+function streamUrl(videoId) {
+  // Public YouTube Music stream proxy (no backend streaming needed)
+  return `https://music.youtube.com/watch?v=${videoId}`;
+}
+
+/* ---------------- Navigation ---------------- */
+function goTo(page) {
+  state.currentPage = page;
+  $$('.page').forEach(p => p.classList.remove('active'));
+  $(`#page-${page}`).classList.add('active');
+  $$('#sidebar button, #bottomNav button').forEach(b =>
+    b.classList.toggle('active', b.dataset.page === page));
+  $('#main').scrollTop = 0;
+  if (page === 'library') renderLiked();
+}
+
+$$('#sidebar button, #bottomNav button').forEach(btn =>
+  btn.addEventListener('click', () => goTo(btn.dataset.page)));
+
+/* ---------------- Rendering ---------------- */
+function cardHTML(song) {
+  const liked = state.likedSongs.has(song.videoId);
+  return `
+    <div class="card" data-vid="${song.videoId}">
+      <div class="thumb-wrap">
+        <img src="${song.thumbnail || ''}" alt="" loading="lazy" />
+        <button class="play-fab" data-vid="${song.videoId}" aria-label="Play">▶</button>
+      </div>
+      <div class="card-title">${escapeHtml(song.title)}</div>
+      <div class="card-sub">${escapeHtml(song.artist || '')}</div>
+    </div>`;
+}
+
+function rowHTML(song, idx) {
+  const liked = state.likedSongs.has(song.videoId);
+  const playing = state.currentSong && state.currentSong.videoId === song.videoId;
+  return `
+    <div class="row ${playing ? 'playing' : ''}" data-vid="${song.videoId}" data-idx="${idx}">
+      <img class="thumb" src="${song.thumbnail || ''}" alt="" loading="lazy" />
+      <div class="meta">
+        <div class="title">${escapeHtml(song.title)}</div>
+        <div class="artist">${escapeHtml(song.artist || '')}${song.duration ? ' • ' + escapeHtml(song.duration) : ''}</div>
+      </div>
+      <div class="actions">
+        <button class="icon-btn like-btn ${liked ? 'liked' : ''}" data-vid="${song.videoId}" aria-label="Like">${liked ? '♥' : '♡'}</button>
+      </div>
+    </div>`;
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+function renderHome() {
+  const grid = $('#homeGrid');
+  const empty = $('#homeEmpty');
+  if (!state.homeResults.length) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  grid.innerHTML = state.homeResults.map(cardHTML).join('');
+}
+
+function renderSearch() {
+  const list = $('#searchList');
+  const empty = $('#searchEmpty');
+  if (!state.searchResults.length) {
+    list.innerHTML = '';
+    empty.querySelector('.big').textContent = '🔍';
+    empty.childNodes[2].textContent = ' Ketik untuk mencari lagu di YouTube Music.';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  list.innerHTML = state.searchResults.map((s, i) => rowHTML(s, i)).join('');
+}
+
+function renderLiked() {
+  const list = $('#likedList');
+  const empty = $('#likedEmpty');
+  const liked = [...state.likedSongs].map(vid =>
+    (state.searchResults.find(s => s.videoId === vid)
+      || state.homeResults.find(s => s.videoId === vid)
+      || { videoId: vid, title: vid, artist: '', thumbnail: '' }));
+  if (!liked.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  list.innerHTML = liked.map((s, i) => rowHTML(s, i)).join('');
+}
+
+/* ---------------- Playback ---------------- */
+function playSong(song, queue = null, index = -1) {
+  if (queue) { state.queue = queue; state.queueIndex = index; }
+  else if (!state.queue.some(s => s.videoId === song.videoId)) {
+    state.queue = [song]; state.queueIndex = 0;
+  } else {
+    state.queueIndex = state.queue.findIndex(s => s.videoId === song.videoId);
+  }
+
+  state.currentSong = song;
+  const audio = state.audioEl;
+
+  // Use YouTube Music embed player via iframe trick is not possible with <audio>;
+  // fallback: open YouTube Music app/URL when direct stream unavailable.
+  // We attempt a lightweight approach: play via YouTube Music web URL in new tab
+  // is NOT seamless. Instead we try the piped/invidious-style proxy list.
+  const proxies = [
+    v => `https://pipedapi.kavin.rocks/streams/${v}`,
+    v => `https://inv.nadeko.net/api/v1/videos/${v}`,
+  ];
+
+  audio.src = '';
+  tryProxies(song.videoId, proxies, 0);
+
+  audio.load();
+  audio.play().catch(() => {
+    toast('Tekan ▶ untuk memutar (autoplay diblokir browser)');
+  });
+
+  updatePlayerUI();
+}
+
+async function tryProxies(videoId, proxies, i) {
+  if (i >= proxies.length) {
+    toast('Stream tidak tersedia — buka di YouTube Music');
+    window.open(`https://music.youtube.com/watch?v=${videoId}`, '_blank');
+    return;
+  }
+  try {
+    const res = await fetch(proxies[i](videoId));
+    if (!res.ok) throw new Error('bad');
+    const data = await res.json();
+    const url = (data.audioStreams && data.audioStreams[0] && data.audioStreams[0].url)
+      || (data.adaptiveFormats && data.adaptiveFormats.find(f => f.audioQuality) && data.adaptiveFormats.find(f => f.audioQuality).url);
+    if (!url) throw new Error('no stream');
+    state.audioEl.src = url;
+    state.audioEl.load();
+    if (state.isPlaying || state.currentSong) state.audioEl.play().catch(() => {});
+  } catch {
+    tryProxies(videoId, proxies, i + 1);
+  }
+}
+
+function togglePlay() {
+  const audio = state.audioEl;
+  if (!state.currentSong) {
+    if (state.queue.length) playSong(state.queue[0], state.queue, 0);
+    return;
+  }
+  if (audio.paused) { audio.play(); state.isPlaying = true; }
+  else { audio.pause(); state.isPlaying = false; }
+  updatePlayerUI();
+}
+
+function nextSong() {
+  if (state.queueIndex < state.queue.length - 1) {
+    playSong(state.queue[state.queueIndex + 1], state.queue, state.queueIndex + 1);
+  } else toast('Antrian habis');
+}
+
+function prevSong() {
+  if (state.queueIndex > 0) {
+    playSong(state.queue[state.queueIndex - 1], state.queue, state.queueIndex - 1);
+  } else {
+    state.audioEl.currentTime = 0;
+  }
+}
+
+function updatePlayerUI() {
+  const s = state.currentSong;
+  const bar = $('#playerBar');
+  if (!s) { bar.classList.remove('visible'); return; }
+  bar.classList.add('visible');
+
+  const thumb = s.thumbnail || '';
+  $('#pbArt').src = thumb; $('#npArt').src = thumb;
+  $('#pbTitle').textContent = s.title; $('#npTitle').textContent = s.title;
+  $('#pbArtist').textContent = s.artist || ''; $('#npArtist').textContent = s.artist || '';
+
+  const icon = state.isPlaying ? '⏸' : '▶';
+  $('#pbPlay').textContent = icon; $('#npPlay').textContent = icon;
+
+  const liked = state.likedSongs.has(s.videoId);
+  $('#pbLike').textContent = liked ? '♥' : '♡';
+  $('#pbLike').classList.toggle('liked', liked);
+
+  // refresh playing highlight
+  if (state.currentPage === 'search') renderSearch();
+  if (state.currentPage === 'library') renderLiked();
+}
+
+/* ---------------- Like ---------------- */
+function toggleLike(videoId) {
+  if (state.likedSongs.has(videoId)) {
+    state.likedSongs.delete(videoId);
+    toast('Dihapus dari Liked');
+    apiCall('song/rate', 'POST', { videoId, rating: 'INDIFFERENT' }).catch(() => {});
+  } else {
+    state.likedSongs.add(videoId);
+    toast('Ditambahkan ke Liked ♥');
+    apiCall('song/rate', 'POST', { videoId, rating: 'LIKE' }).catch(() => {});
+  }
+  saveLiked();
+  updatePlayerUI();
+  if (state.currentPage === 'library') renderLiked();
+}
+
+/* ---------------- Events ---------------- */
+// Search with debounce
+let searchTimer;
+$('#searchInput').addEventListener('input', (e) => {
+  const q = e.target.value.trim();
+  $('#clearSearch').classList.toggle('visible', q.length > 0);
+  clearTimeout(searchTimer);
+  if (!q) { state.searchResults = []; renderSearch(); return; }
+  searchTimer = setTimeout(async () => {
+    try {
+      const data = await apiCall(`search?q=${encodeURIComponent(q)}&type=songs`);
+      state.searchResults = data.results || [];
+      renderSearch();
+    } catch (err) {
+      toast('Gagal mencari: ' + err.message);
+    }
+  }, 300);
+});
+
+$('#clearSearch').addEventListener('click', () => {
+  $('#searchInput').value = '';
+  $('#clearSearch').classList.remove('visible');
+  state.searchResults = [];
+  renderSearch();
+  goTo('home');
+});
+
+// Click delegation for cards / rows
+document.addEventListener('click', (e) => {
+  const likeBtn = e.target.closest('.like-btn');
+  if (likeBtn) { e.stopPropagation(); toggleLike(likeBtn.dataset.vid); return; }
+
+  const playFab = e.target.closest('.play-fab');
+  if (playFab) {
+    e.stopPropagation();
+    const vid = playFab.dataset.vid;
+    const song = state.homeResults.find(s => s.videoId === vid)
+      || state.searchResults.find(s => s.videoId === vid);
+    if (song) playSong(song, state.homeResults.length ? state.homeResults : state.searchResults,
+      (state.homeResults.length ? state.homeResults : state.searchResults).findIndex(s => s.videoId === vid));
+    return;
+  }
+
+  const row = e.target.closest('.row');
+  if (row) {
+    const vid = row.dataset.vid;
+    const idx = parseInt(row.dataset.idx, 10);
+    const song = state.searchResults[idx] || state.homeResults.find(s => s.videoId === vid);
+    if (song) playSong(song, state.searchResults.length ? state.searchResults : state.homeResults, idx);
+    return;
+  }
+
+  const card = e.target.closest('.card');
+  if (card) {
+    const vid = card.dataset.vid;
+    const idx = state.homeResults.findIndex(s => s.videoId === vid);
+    if (idx >= 0) playSong(state.homeResults[idx], state.homeResults, idx);
+  }
+});
+
+// Player controls
+$('#pbPlay').addEventListener('click', togglePlay);
+$('#npPlay').addEventListener('click', togglePlay);
+$('#pbNext').addEventListener('click', nextSong);
+$('#npNext').addEventListener('click', nextSong);
+$('#pbPrev').addEventListener('click', prevSong);
+$('#npPrev').addEventListener('click', prevSong);
+$('#pbLike').addEventListener('click', () => state.currentSong && toggleLike(state.currentSong.videoId));
+$('#pbSong').addEventListener('click', () => goTo('nowplaying'));
+
+// Seek
+const npSeek = $('#npSeek');
+npSeek.addEventListener('input', () => {
+  const audio = state.audioEl;
+  if (!audio.duration) return;
+  audio.currentTime = (npSeek.value / 1000) * audio.duration;
+});
+
+// Volume
+function setVolume(v) {
+  state.audioEl.volume = v / 100;
+  $('#volIcon').textContent = v == 0 ? '🔇' : v < 50 ? '🔉' : '🔊';
+}
+$('#npVolume').addEventListener('input', (e) => setVolume(e.target.value));
+$('#pbVolume').addEventListener('input', (e) => setVolume(e.target.value));
+
+// Audio events
+const audio = state.audioEl;
+audio.addEventListener('play', () => { state.isPlaying = true; updatePlayerUI(); });
+audio.addEventListener('pause', () => { state.isPlaying = false; updatePlayerUI(); });
+audio.addEventListener('ended', nextSong);
+audio.addEventListener('timeupdate', () => {
+  if (!audio.duration) return;
+  const pct = (audio.currentTime / audio.duration) * 100;
+  $('#pbFill').style.width = pct + '%';
+  npSeek.value = Math.round((audio.currentTime / audio.duration) * 1000);
+  $('#npCur').textContent = fmtTime(audio.currentTime);
+});
+audio.addEventListener('loadedmetadata', () => {
+  $('#npDur').textContent = fmtTime(audio.duration);
+});
+audio.addEventListener('error', () => {
+  if (state.currentSong) toast('Stream gagal dimuat');
+});
+
+/* ---------------- Init ---------------- */
+async function init() {
+  setVolume(80);
+  renderLiked();
+
+  // Load trending-ish home content
+  try {
+    const data = await apiCall('search?q=trending+music+2026&type=songs&limit=12');
+    state.homeResults = data.results || [];
+    renderHome();
+  } catch {
+    $('#homeEmpty').classList.remove('hidden');
+  }
+}
+
+init();
+</script>
+</body>
+</html>
