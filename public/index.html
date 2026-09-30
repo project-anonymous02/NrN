@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>NRN Music</title>
+<style>
+  :root{
+    --bg:#000; --card:#121212; --card2:#1a1a1a;
+    --text:#fff; --muted:#a7a7a7; --accent:#1ed760;
+    --accent-dark:#159b47; --danger:#e22134;
+    --player-h:88px; --nav-h:64px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:#000;color:#fff;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    overscroll-behavior:none;overflow:hidden;height:100%;height:100dvh;
+    -webkit-font-smoothing:antialiased;touch-action:manipulation}
+  input,button{font-family:inherit;font-size:16px}
+  #app{position:fixed;inset:0;display:grid;grid-template-rows:1fr auto auto;
+    padding-top:env(safe-area-inset-top);
+    background:linear-gradient(180deg,#121212 0%,#000 55%)}
+  header{height:56px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 14px;position:sticky;top:0;z-index:20;
+    background:linear-gradient(180deg,rgba(0,0,0,.75),transparent);backdrop-filter:blur(10px)}
+  header h1{font-size:21px;margin:0;font-weight:800;letter-spacing:-.4px}
+  .btn-icon{width:44px;height:44px;border-radius:50%;border:0;background:transparent;
+    color:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+  .btn-icon:active{background:rgba(255,255,255,.1)}
+  main{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+    padding:4px 14px calc(var(--player-h) + var(--nav-h) + 20px + env(safe-area-inset-bottom))}
+  main::-webkit-scrollbar{display:none}
+  .search-wrap{position:sticky;top:0;z-index:15;padding:6px 0 14px;
+    background:linear-gradient(180deg,#0e0e0e 70%,transparent)}
+  .search-input{width:100%;height:48px;border-radius:8px;border:0;
+    padding:0 14px;background:#fff;color:#000;font-weight:600;outline:none}
+  .shelf{margin-bottom:22px}
+  .shelf-title{font-size:19px;font-weight:800;margin:0 0 10px;letter-spacing:-.3px}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .card{background:transparent;border:0;color:#fff;text-align:left;padding:6px;
+    border-radius:8px;cursor:pointer}
+  .card:active{background:var(--card2)}
+  .card .thumb{aspect-ratio:1/1;width:100%;border-radius:6px;background:#222;object-fit:cover;
+    box-shadow:0 6px 14px rgba(0,0,0,.5)}
+  .card .t{font-weight:700;font-size:13.5px;margin:7px 0 2px;line-height:1.3;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .card .s{font-size:11.5px;color:var(--muted);margin:0;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .track{display:grid;grid-template-columns:48px 1fr auto;gap:10px;align-items:center;
+    padding:7px 4px;border-radius:8px;cursor:pointer}
+  .track:active{background:var(--card2)}
+  .track .thumb{width:48px;height:48px;border-radius:4px;background:#222;object-fit:cover}
+  .track .meta{min-width:0}
+  .track .title{font-size:14.5px;font-weight:600;margin:0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .track .artist{font-size:11.5px;color:var(--muted);margin:2px 0 0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .track .dur{font-size:11.5px;color:var(--muted);padding-right:4px}
+  .track.playing .title{color:var(--accent)}
+  .big-play{display:block;width:68px;height:68px;border-radius:50%;
+    background:var(--accent);color:#000;border:0;cursor:pointer;
+    margin:12px auto 20px;font-size:28px;
+    box-shadow:0 10px 28px rgba(30,215,96,.35)}
+  .big-play:active{transform:scale(.96);background:var(--accent-dark)}
+  .pl-head{text-align:center;padding:6px 0 2px}
+  .pl-head .cover{width:170px;height:170px;border-radius:8px;object-fit:cover;
+    box-shadow:0 16px 44px rgba(0,0,0,.6)}
+  .pl-head h2{margin:14px 0 4px;font-size:21px}
+  .pl-head p{margin:0;color:var(--muted);font-size:12.5px}
+  #player{position:relative;z-index:30;height:var(--player-h);
+    background:#181818;border-top:1px solid #282828;
+    display:grid;grid-template-columns:1fr 160px;align-items:center;padding:0 10px}
+  #player .info{display:grid;grid-template-columns:48px 1fr;gap:10px;align-items:center;min-width:0}
+  #player .thumb{width:48px;height:48px;border-radius:4px;background:#333;object-fit:cover}
+  #player .tt{font-size:13.5px;font-weight:600;margin:0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #player .ar{font-size:11px;color:var(--muted);margin:2px 0 0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #player .controls{display:flex;align-items:center;justify-content:flex-end;gap:2px}
+  .pc-btn{width:44px;height:44px;border-radius:50%;border:0;background:transparent;
+    color:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+  .pc-btn:active{background:rgba(255,255,255,.1)}
+  .pc-btn.on{color:var(--accent)}
+  .seekbar{position:absolute;left:0;right:0;top:-2px;height:2px;background:#333;cursor:pointer}
+  .seekbar>div{height:100%;background:var(--accent);width:0%}
+  nav{height:calc(var(--nav-h) + env(safe-area-inset-bottom));
+    padding-bottom:env(safe-area-inset-bottom);
+    background:#000;border-top:1px solid #1a1a1a;
+    display:grid;grid-template-columns:repeat(4,1fr);position:relative;z-index:30}
+  .nav-btn{background:transparent;border:0;color:var(--muted);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:2px;font-size:11px;font-weight:600;cursor:pointer}
+  .nav-btn svg{width:24px;height:24px}
+  .nav-btn.active{color:#fff}
+  .login-card{background:var(--card);border-radius:14px;padding:20px;margin:10px 0;text-align:center}
+  .code-box{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:30px;font-weight:800;letter-spacing:6px;
+    padding:16px;background:#000;color:var(--accent);
+    border-radius:10px;margin:12px 0;user-select:all}
+  .btn-primary{display:block;width:100%;padding:14px 16px;border-radius:999px;
+    border:0;background:var(--accent);color:#000;font-weight:800;
+    font-size:15px;cursor:pointer;margin-top:10px}
+  .btn-primary:active{background:var(--accent-dark)}
+  .btn-secondary{display:block;width:100%;padding:13px 16px;border-radius:999px;
+    border:1px solid #555;background:transparent;color:#fff;font-weight:700;
+    font-size:14px;cursor:pointer;margin-top:10px}
+  .link{color:var(--accent);text-decoration:underline;word-break:break-all;font-size:13px}
+  .muted{color:var(--muted);font-size:12.5px}
+  .field{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #333;
+    background:#000;color:#fff;margin:6px 0;font-size:14px;outline:none}
+  .field:focus{border-color:var(--accent)}
+  .spinner{width:20px;height:20px;border-radius:50%;
+    border:3px solid #333;border-top-color:var(--accent);
+    display:inline-block;animation:spin .75s linear infinite;vertical-align:middle;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #toast{position:fixed;left:14px;right:14px;
+    bottom:calc(var(--nav-h) + var(--player-h) + 14px + env(safe-area-inset-bottom));
+    background:var(--danger);color:#fff;padding:11px 14px;border-radius:10px;
+    font-size:13.5px;font-weight:600;z-index:999;
+    transform:translateY(24px);opacity:0;pointer-events:none;
+    transition:all .22s ease;box-shadow:0 10px 26px rgba(0,0,0,.5)}
+  #toast.show{transform:translateY(0);opacity:1}
+  .section-title{font-size:17px;font-weight:800;margin:18px 4px 8px}
+  .empty{text-align:center;color:var(--muted);padding:50px 16px;font-size:13px}
+  .hidden{display:none !important}
+  hr{border:0;border-top:1px solid #1f1f1f;margin:14px 0}
+  label.small{font-size:12px;color:var(--muted);display:block;margin-top:8px}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <h1 id="hdr-title">NRN Music</h1>
+    <button class="btn-icon" id="btn-back" style="display:none" aria-label="Back">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <button class="btn-icon" id="btn-settings" aria-label="Settings" onclick="openSettings()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+
+  <main id="main"></main>
+
+  <div id="player" class="hidden">
+    <div class="seekbar" id="seekbar"><div id="seekfill"></div></div>
+    <div class="info">
+      <img class="thumb" id="p-thumb" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48'><rect width='48' height='48' fill='%23333'/></svg>">
+      <div>
+        <p class="tt" id="p-title">—</p>
+        <p class="ar" id="p-artist">Pilih lagu untuk mulai</p>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="pc-btn" id="btn-prev" aria-label="Prev" onclick="prevTrack()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+      </button>
+      <button class="pc-btn" id="btn-play" aria-label="Play" onclick="togglePlay()">
+        <svg id="ic-play" width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="ic-pause" class="hidden" width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+      </button>
+      <button class="pc-btn" id="btn-next" aria-label="Next" onclick="nextTrack(false)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <nav>
+    <button class="nav-btn active" data-view="home" onclick="go('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></svg>
+      Home
+    </button>
+    <button class="nav-btn" data-view="search" onclick="go('search')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      Search
+    </button>
+    <button class="nav-btn" data-view="library" onclick="go('library')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14V7"/><path d="M11 14V5"/><path d="M15 14v-4"/><path d="M19 14V9"/></svg>
+      Library
+    </button>
+    <button class="nav-btn" data-view="queue" onclick="go('queue')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="15" y2="18"/></svg>
+      Queue
+    </button>
+  </nav>
+</div>
+
+<div id="toast"></div>
+<audio id="audio" preload="metadata" crossorigin="anonymous"></audio>
+
+<script>
+/* =========================================================
+   NRN MUSIC v3 — FRONTEND
+   - Mobile-only
+   - Anonymous = langsung Home/Search/Play
+   - Login HANYA untuk Library (Google Device Flow)
+   - Audio: LANGSUNG dari googlevideo.com (IP HP = residential)
+   - Audio engine: promise-locked (tidak ada interrupted error)
+   ========================================================= */
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+const API = "";
+
+const LS = {
+  get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch{ return null; } },
+  set(k,v){ localStorage.setItem(k, JSON.stringify(v)); },
+  del(k){ localStorage.removeItem(k); }
+};
+
+const state = {
+  view: "home",
+  history: [],
+  home: null,
+  queue: [],
+  qIndex: -1,
+  shuffle: false,
+  repeat: 0,          // 0 none, 1 all, 2 one
+  playLock: null,     // Promise lock: tidak ganggu audio selama play() belum settle
+  token: LS.get("ytm_token"),
+  cid: LS.get("ytm_cid"),
+  csec: LS.get("ytm_csec"),
+  device: null,
+  pollTimer: null,
+  // cache list tracks
+  _pl: null, _al: null, _ar: null, _liked: null, _libPl: null,
+};
+
+const audio = $("#audio");
+
+/* ---------- TOAST ---------- */
+let toastTimer = null;
+function toast(msg){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove("show"), 2700);
+}
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function escAttr(s){ return esc(s); }
+
+/* ---------- API HELPERS ---------- */
+function authHeaders(){
+  const h = {};
+  if (state.token) h["X-YTM-Token"] = JSON.stringify(state.token);
+  if (state.cid) h["X-YTM-Cid"] = state.cid;
+  if (state.csec) h["X-YTM-Csec"] = state.csec;
+  return h;
+}
+async function apiGet(path){
+  const r = await fetch(API + path, {headers: authHeaders()});
+  if (!r.ok) {
+    let d = null;
+    try{ d = await r.json(); }catch{}
+    if (r.status === 401) {
+      // coba refresh 1x
+      if (state.token?.refresh_token && state.cid && state.csec) {
+        try{
+          const rr = await fetch(API+"/api/auth/refresh", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({
+              client_id: state.cid, client_secret: state.csec,
+              refresh_token: state.token.refresh_token,
+            })
+          });
+          if (rr.ok) {
+            const nd = await rr.json();
+            state.token = {...state.token, ...nd,
+              expires_at: Math.floor(Date.now()/1000)+(nd.expires_in||3600)};
+            LS.set("ytm_token", state.token);
+            return apiGet(path);
+          }
+        }catch{}
+      }
+      state.token = null; LS.del("ytm_token");
+      throw new Error("LOGIN_REQUIRED");
+    }
+    throw new Error((d && d.detail) || `HTTP ${r.status}`);
+  }
+  const ct = r.headers.get("content-type") || "";
+  if (ct.includes("json")) {
+    const d = await r.json();
+    if (d.token) { state.token = d.token; LS.set("ytm_token", d.token); delete d.token; }
+    return d;
+  }
+  return r.text();
+}
+async function apiPost(path, body){
+  const r = await fetch(API+path, {
+    method:"POST",
+    headers:{"Content-Type":"application/json", ...authHeaders()},
+    body: JSON.stringify(body||{}),
+  });
+  try{ return await r.json(); }catch{ return {}; }
+}
+
+/* =========================================================
+   AUDIO ENGINE — PROMISE LOCKED
+   Aturan: SELALU tunggu playLock settle sebelum sentuh audio.
+   Ini menghilangkan 100% error:
+     "play() request was interrupted by a call to pause()"
+   ========================================================= */
+async function _waitLock(){
+  if (state.playLock) {
+    try{ await state.playLock.catch(()=>{}); }catch{}
+    state.playLock = null;
+  }
+}
+
+async function loadAndPlay(videoId, meta){
+  if (!videoId) return;
+  // Tunggu lock lama selesai DULU — JANGAN ganggu audio
+  await _waitLock();
+  try{
+    // Update UI duluan
+    if (meta) {
+      $("#p-title").textContent = meta.title || "—";
+      $("#p-artist").textContent = meta.artist || "";
+      if (meta.thumb) $("#p-thumb").src = meta.thumb;
+    }
+    $("#player").classList.remove("hidden");
+    $$(".track").forEach(tr=>tr.classList.toggle("playing", tr.dataset.vid===videoId));
+
+    // Fetch fresh stream URL dari backend
+    const s = await apiGet(`/api/song/${encodeURIComponent(videoId)}`);
+    if (!s.streamUrl) throw new Error("Tidak ada stream yang tersedia untuk lagu ini");
+
+    // Update final metadata
+    if (s.title) $("#p-title").textContent = s.title;
+    if (s.author) $("#p-artist").textContent = s.author;
+    if (s.thumb) $("#p-thumb").src = s.thumb;
+
+    // Reset + set src
+    try{ audio.pause(); }catch{}
+    audio.removeAttribute("src");
+    audio.load();
+    audio.src = s.streamUrl;
+    audio.load();
+
+    // Play dengan LOCK
+    const p = audio.play();
+    if (p && typeof p.catch === "function") {
+      state.playLock = p;
+      try{ await p; }
+      catch(err){
+        // AbortError / interrupted = NORMAL saat ganti lagu cepat — JANGAN dimunculkan
+        if (err && err.name !== "AbortError" && !/interrupt/i.test(err.message || "")) {
+          console.warn("play warn:", err);
+          toast("Gagal putar: " + (err.message || "error"));
+        }
+      }
+      state.playLock = null;
+    }
+  }catch(err){
+    console.error(err);
+    toast("Gagal putar: " + (err.message || "error"));
+    state.playLock = null;
+  }
+}
+
+function togglePlay(){
+  if (audio.paused) {
+    if (!audio.src && state.queue[state.qIndex]) {
+      const t = state.queue[state.qIndex];
+      loadAndPlay(t.videoId, t);
+      return;
+    }
+    const p = audio.play();
+    if (p && typeof p.catch === "function") {
+      state.playLock = p;
+      p.catch(()=>{}).then(()=>state.playLock=null);
+    }
+  } else {
+    audio.pause();
+  }
+}
+
+function playTrackAt(i){
+  if (i<0 || i>=state.queue.length) return;
+  state.qIndex = i;
+  const t = state.queue[i];
+  loadAndPlay(t.videoId, t);
+}
+
+function nextTrack(auto){
+  if (state.repeat === 2 && auto) { audio.currentTime=0; togglePlay(); return; }
+  if (!state.queue.length) return;
+  let i;
+  if (state.shuffle){
+    if (state.queue.length<2) i=0;
+    else { do{ i = Math.floor(Math.random()*state.queue.length); }while(i===state.qIndex); }
+  } else {
+    i = state.qIndex + 1;
+    if (i >= state.queue.length) {
+      if (state.repeat === 1) i=0;
+      else if (auto) { autoplayMore(); return; }
+      else return;
+    }
+  }
+  playTrackAt(i);
+}
+function prevTrack(){
+  if (audio.currentTime > 3) { audio.currentTime=0; return; }
+  let i = state.qIndex - 1;
+  if (i<0) i = state.queue.length-1;
+  playTrackAt(i);
+}
+
+async function autoplayMore(){
+  const cur = state.queue[state.qIndex]; if (!cur) return;
+  try{
+    const r = await apiGet(`/api/suggestions?videoId=${encodeURIComponent(cur.videoId)}`);
+    if (r.tracks && r.tracks.length) {
+      state.queue.push(...r.tracks);
+      playTrackAt(state.qIndex+1);
+    }
+  }catch{}
+}
+
+/* ---------- PLAYER EVENTS ---------- */
+audio.addEventListener("timeupdate", ()=>{
+  if (!audio.duration) return;
+  $("#seekfill").style.width = (audio.currentTime/audio.duration*100)+"%";
+});
+$("#seekbar").addEventListener("click", (e)=>{
+  const r = e.currentTarget.getBoundingClientRect();
+  const p = (e.clientX - r.left)/r.width;
+  if (audio.duration) audio.currentTime = p*audio.duration;
+});
+audio.addEventListener("ended", ()=> nextTrack(true));
+audio.addEventListener("play", ()=>{
+  $("#ic-play").classList.add("hidden"); $("#ic-pause").classList.remove("hidden");
+});
+audio.addEventListener("pause", ()=>{
+  $("#ic-play").classList.remove("hidden"); $("#ic-pause").classList.add("hidden");
+});
+audio.addEventListener("error", ()=>{
+  toast("Gagal muat stream — coba lagu lain");
+});
+
+/* ---------- ROUTER ---------- */
+function go(v, pushHist=true){
+  if (pushHist && state.view !== v) state.history.push(state.view);
+  state.view = v;
+  $$(".nav-btn").forEach(b=>b.classList.toggle("active", b.dataset.view===v));
+  $("#btn-back").style.display = state.history.length ? "flex" : "none";
+  const titles = {home:"NRN Music",search:"Search",library:"Library",queue:"Queue",settings:"Settings"};
+  $("#hdr-title").textContent = titles[v] || "NRN Music";
+  render();
+}
+$("#btn-back").onclick = ()=>{
+  const prev = state.history.pop();
+  go(prev || "home", false);
+};
+window.openSettings = ()=> go("settings");
+
+/* ---------- RENDER DISPATCHER ---------- */
+function render(){
+  const m = $("#main");
+  if (state.view === "home") renderHome(m);
+  else if (state.view === "search") renderSearch(m);
+  else if (state.view === "library") renderLibrary(m);
+  else if (state.view === "queue") renderQueue(m);
+  else if (state.view === "settings") renderSettings(m);
+  else if (state.view === "playlist") renderPlaylist(m);
+  else if (state.view === "album") renderAlbum(m);
+  else if (state.view === "artist") renderArtist(m);
+  else if (state.view === "libpl") renderLibPlaylist(m);
+}
+
+/* ---------- HOME ---------- */
+async function renderHome(m){
+  m.innerHTML = `<div class="empty"><span class="spinner"></span> Memuat...</div>`;
+  try{
+    const d = state.home || await apiGet("/api/home");
+    state.home = d;
+    let html = "";
+    for (const sh of d.shelves){
+      html += `<section class="shelf"><h2 class="shelf-title">${esc(sh.title)}</h2><div class="grid">`;
+      for (const it of sh.items){
+        let click = "";
+        if (it.playlistId) click = `openPlaylist('${escAttr(it.playlistId)}')`;
+        else if (it.videoId) click = `playOne('${escAttr(it.videoId)}','${escAttr(it.title)}','${escAttr(it.subtitle)}','${escAttr(it.thumb)}')`;
+        else if (it.browseId) click = `openBrowse('${escAttr(it.browseId)}','${escAttr(it.type||"")}')`;
+        html += `<button class="card" onclick="${click}">
+          <img class="thumb" loading="lazy" src="${escAttr(it.thumb)}" alt="">
+          <p class="t">${esc(it.title)}</p>
+          <p class="s">${esc(it.subtitle)}</p>
+        </button>`;
+      }
+      html += `</div></section>`;
+    }
+    m.innerHTML = html || `<div class="empty">Tidak ada konten</div>`;
+  }catch(e){
+    m.innerHTML = `<div class="empty">Gagal muat home<br><span class="muted">${esc(e.message)}</span></div>`;
+  }
+}
+window.openPlaylist = (pid)=>{ state._pid=pid; state.history.push(state.view); state.view="playlist"; render(); };
+window.openBrowse = (bid, t)=>{
+  state._bid = bid;
+  state.history.push(state.view);
+  state.view = (t==="artist") ? "artist" : "album";
+  render();
+};
+window.playOne = (vid,t,a,th)=>{
+  state.queue = [{videoId:vid,title:t,artist:a,thumb:th}];
+  state.qIndex = 0;
+  loadAndPlay(vid, {title:t,artist:a,thumb:th});
+};
+
+/* ---------- SEARCH ---------- */
+let searchTimer = null;
+function renderSearch(m){
+  m.innerHTML = `
+    <div class="search-wrap">
+      <input class="search-input" id="q" placeholder="Cari lagu, artis, album..." autocomplete="off">
+    </div>
+    <div id="sres"><div class="empty">Ketik untuk mencari</div></div>
+  `;
+  const inp = $("#q");
+  inp.addEventListener("input", ()=>{
+    clearTimeout(searchTimer);
+    const q = inp.value.trim();
+    searchTimer = setTimeout(()=> doSearch(q), 350);
+  });
+  setTimeout(()=>inp.focus(), 50);
+}
+async function doSearch(q){
+  const out = $("#sres");
+  if (!q){ out.innerHTML=`<div class="empty">Ketik untuk mencari</div>`; return; }
+  out.innerHTML = `<div class="empty"><span class="spinner"></span> Mencari...</div>`;
+  try{
+    const d = await apiGet(`/api/search?q=${encodeURIComponent(q)}`);
+    if (!d.items.length){ out.innerHTML=`<div class="empty">Tidak ditemukan</div>`; return; }
+    let html = "";
+    for (const it of d.items){
+      if (it.resultType === "song" || it.videoId){
+        html += trackRow(it.videoId, it.title, it.artist, it.thumb, it.duration||"", "search");
+      } else if (it.resultType === "playlist"){
+        html += `<button class="card" style="display:grid;grid-template-columns:56px 1fr;gap:10px;width:100%;text-align:left;padding:6px;border-radius:8px" onclick="openPlaylist('${escAttr(it.playlistId)}')">
+          <img style="width:56px;height:56px;border-radius:6px" src="${escAttr(it.thumb)}">
+          <div><p class="t" style="margin:4px 0 2px">${esc(it.title)}</p><p class="s">Playlist</p></div>
+        </button>`;
+      } else if (it.resultType === "album"){
+        html += `<button class="card" style="display:grid;grid-template-columns:56px 1fr;gap:10px;width:100%;text-align:left;padding:6px;border-radius:8px" onclick="state._bid='${escAttr(it.browseId)}';state.history.push('search');state.view='album';render()">
+          <img style="width:56px;height:56px;border-radius:6px" src="${escAttr(it.thumb)}">
+          <div><p class="t" style="margin:4px 0 2px">${esc(it.title)}</p><p class="s">Album · ${esc(it.artist||"")}</p></div>
+        </button>`;
+      } else if (it.resultType === "artist"){
+        html += `<button class="card" style="display:grid;grid-template-columns:56px 1fr;gap:10px;width:100%;text-align:left;padding:6px;border-radius:8px" onclick="state._bid='${escAttr(it.browseId)}';state.history.push('search');state.view='artist';render()">
+          <img style="width:56px;height:56px;border-radius:50%" src="${escAttr(it.thumb)}">
+          <div><p class="t" style="margin:20px 0 0">${esc(it.title)}</p></div>
+        </button>`;
+      }
+    }
+    out.innerHTML = html;
+  }catch(e){
+    out.innerHTML = `<div class="empty">Gagal cari<br><span class="muted">${esc(e.message)}</span></div>`;
+  }
+}
+
+function trackRow(vid, title, artist, thumb, dur, ctx){
+  const playing = state.queue[state.qIndex]?.videoId === vid;
+  return `<div class="track ${playing?"playing":""}" data-vid="${escAttr(vid)}"
+    onclick="playFromCtx('${escAttr(ctx)}','${escAttr(vid)}')">
+    <img class="thumb" loading="lazy" src="${escAttr(thumb)}" alt="">
+    <div class="meta">
+      <p class="title">${esc(title||"—")}</p>
+      <p class="artist">${esc(artist||"")}</p>
+    </div>
+    <span class="dur">${esc(dur||"")}</span>
+  </div>`;
+}
+window.playFromCtx = (ctx, vid)=>{
+  let list = [];
+  if (ctx==="playlist") list = state._pl || [];
+  else if (ctx==="album") list = state._al || [];
+  else if (ctx==="artist") list = state._ar || [];
+  else if (ctx==="libliked") list = state._liked || [];
+  else if (ctx==="libpl") list = state._libPl || [];
+  let meta = list.find(t=>t.videoId===vid);
+  if (!meta) meta = {videoId:vid,title:"—",artist:"",thumb:""};
+  // kalau dari search dan belum di queue, tambahkan
+  let i = state.queue.findIndex(t=>t.videoId===vid);
+  if (i<0){ state.queue.push(meta); i = state.queue.length-1; }
+  playTrackAt(i);
+};
+
+/* ---------- PLAYLIST ---------- */
+async function renderPlaylist(m){
+  m.innerHTML = `<div class="empty"><span class="spinner"></span></div>`;
+  try{
+    const d = await apiGet(`/api/playlist/${encodeURIComponent(state._pid)}`);
+    state._pl = d.tracks || [];
+    m.innerHTML = `
+      <div class="pl-head">
+        <img class="cover" src="${escAttr(d.thumb)}" alt="">
+        <h2>${esc(d.title)}</h2>
+        <p>${esc(d.description||"")}</p>
+        <p>${d.trackCount} lagu</p>
+      </div>
+      <button class="big-play" onclick="playAllPl()">▶</button>
+      <div>${d.tracks.filter(t=>t.videoId).map(t=>trackRow(t.videoId,t.title,t.artist,t.thumb,t.duration||"","playlist")).join("")}</div>
+    `;
+  }catch(e){
+    m.innerHTML = `<div class="empty">Gagal muat playlist<br><span class="muted">${esc(e.message)}</span></div>`;
+  }
+}
+window.playAllPl = ()=>{
+  if (!state._pl?.length) return;
+  state.queue = state._pl.filter(t=>t.videoId).map(t=>({videoId:t.videoId,title:t.title,artist:t.artist,thumb:t.thumb}));
+  state.qIndex = -1; nextTrack(false);
+};
+
+/* ---------- ALBUM ---------- */
+async function renderAlbum(m){
+  m.innerHTML = `<div class="empty"><span class="spinner"></span></div>`;
+  try{
+    const d = await apiGet(`/api/album/${encodeURIComponent(state._bid)}`);
+    state._al = d.tracks || [];
+    m.innerHTML = `
+      <div class="pl-head">
+        <img class="cover" src="${escAttr(d.thumb)}" alt="">
+        <h2>${esc(d.title)}</h2>
+        <p>${esc(d.artists||"")}${d.year?` · ${d.year}`:""}</p>
+        <p>${d.trackCount} lagu</p>
+      </div>
+      <button class="big-play" onclick="playAllAl()">▶</button>
+      <div>${d.tracks.filter(t=>t.videoId).map(t=>trackRow(t.videoId,t.title,t.artist,t.thumb,t.duration||"","album")).join("")}</div>
+    `;
+  }catch(e){
+    m.innerHTML = `<div class="empty">Gagal muat album<br><span class="muted">${esc(e.message)}</span></div>`;
+  }
+}
+window.playAllAl = ()=>{
+  if (!state._al?.length) return;
+  state.queue = state._al.filter(t=>t.videoId).map(t=>({videoId:t.videoId,title:t.title,artist:t.artist,thumb:t.thumb}));
+  state.qIndex=-1; nextTrack(false);
+};
+
+/* ---------- ARTIST ---------- */
+async function renderArtist(m){
+  m.innerHTML = `<div class="empty"><span class="spinner"></span></div>`;
+  try{
+    const d = await apiGet(`/api/artist/${encodeURIComponent(state._bid)}`);
+    state._ar = d.topSongs || [];
+    m.innerHTML = `
+      <div class="pl-head">
+        <img class="cover" style="border-radius:50%" src="${escAttr(d.thumb)}" alt="">
+        <h2>${esc(d.name)}</h2>
+        <p>${esc(d.description||"Artis")}</p>
+      </div>
+      <h3 class="section-title">Lagu Populer</h3>
+      <div>${d.topSongs.filter(t=>t.videoId).map(t=>trackRow(t.videoId,t.title,t.artist,t.thumb,t.duration||"","artist")).join("")}</div>
+    `;
+  }catch(e){
+    m.innerHTML = `<div class="empty">Gagal muat artis<br><span class="muted">${esc(e.message)}</span></div>`;
+  }
+}
+
+/* ---------- QUEUE ---------- */
+function renderQueue(m){
+  if (!state.queue.length){
+    m.innerHTML = `<div class="empty">Queue kosong.<br>Cari lagu lalu klik untuk memutar.</div>`;
+    return;
+  }
+  let html = `<h2 class="section-title">Sedang Diputar</h2>`;
+  html += state.queue.map((t,i)=>`
+    <div class="track ${i===state.qIndex?"playing":""}" onclick="playTrackAt(${i})">
+      <img class="thumb" src="${escAttr(t.thumb)}">
+      <div class="meta"><p class="title">${esc(t.title)}</p><p class="artist">${esc(t.artist||"")}</p></div>
+      <span class="dur">${i===state.qIndex?"▶":""}</span>
+    </div>`).join("");
+  html += `<button class="btn-secondary" onclick="state.queue=[];state.qIndex=-1;render()">Kosongkan Queue</button>`;
+  m.innerHTML = html;
+}
+
+/* ---------- SETTINGS ---------- */
+function renderSettings(m){
+  const loggedIn = !!(state.token && state.cid && state.csec);
+  m.innerHTML = `
+    <div class="login-card">
+      <h2 style="margin:0 0 6px">⚙️ Settings</h2>
+      <p class="muted">Masukkan OAuth Client ID + Secret kamu sendiri (Google Cloud).<br>
+      Tipe: <b>TVs and Limited Input devices</b>, Status: <b>In Production</b>.</p>
+
+      <label class="small">Client ID</label>
+      <input class="field" id="f_cid" value="${escAttr(state.cid||"")}" placeholder="xxxx.apps.googleusercontent.com">
+
+      <label class="small">Client Secret</label>
+      <input class="field" id="f_csec" value="${escAttr(state.csec||"")}" placeholder="GOCSPX-...">
+
+      <button class="btn-primary" onclick="saveCreds()">💾 Simpan Client ID & Secret</button>
+
+      <hr>
+
+      <h3 style="margin:4px 0 8px;font-size:16px">Akun YouTube Music</h3>
+      <p class="muted">${loggedIn ? "✅ Sudah login" : "✗ Belum login"}</p>
+
+      ${loggedIn
+        ? `<button class="btn-secondary" onclick="logout()">Keluar</button>`
+        : `<button class="btn-primary" onclick="startLogin()" ${(!state.cid||!state.csec)?"disabled style='opacity:.5;cursor:not-allowed'":""}>🔑 Mulai Login</button>`
+      }
+
+      <div id="login-box" class="hidden" style="margin-top:14px">
+        <p class="muted">1. Buka link ini:</p>
+        <a class="link" id="login-url" href="https://www.google.com/device" target="_blank" rel="noopener">https://www.google.com/device</a>
+        <p class="muted" style="margin-top:10px">2. Masukkan kode:</p>
+        <div class="code-box" id="login-code">— — — — — —</div>
+        <p id="login-status" class="muted"><span class="spinner"></span>Menunggu kamu login di browser...</p>
+        <button class="btn-secondary" onclick="cancelLogin()">Batal</button>
+      </div>
+    </div>
+
+    <div class="login-card">
+      <p class="muted">Client ID, Secret, dan Token kamu <b>tidak pernah dikirim ke server manapun</b>
+      selain Google langsung. Semua disimpan HANYA di localStorage browser HP ini.</p>
+    </div>
+  `;
+}
+window.saveCreds = ()=>{
+  state.cid = $("#f_cid").value.trim();
+  state.csec = $("#f_csec").value.trim();
+  if (!state.cid || !state.csec) { toast("Client ID & Secret wajib diisi"); return; }
+  LS.set("ytm_cid", state.cid);
+  LS.set("ytm_csec", state.csec);
+  toast("✅ Tersimpan");
+  render();
+};
+window.logout = ()=>{
+  state.token=null; LS.del("ytm_token");
+  cancelLogin();
+  toast("Sudah keluar");
+  render();
+};
+window.cancelLogin = ()=>{
+  clearInterval(state.pollTimer); state.pollTimer=null; state.device=null;
+  const b = $("#login-box"); if (b) b.classList.add("hidden");
+};
+window.startLogin = async ()=>{
+  if (!state.cid || !state.csec) { toast("Simpan Client ID dulu"); return; }
+  try{
+    const d = await apiGet(`/api/auth/device?client_id=${encodeURIComponent(state.cid)}`);
+    state.device = d;
+    const box = $("#login-box"); box.classList.remove("hidden");
+    const link = d.verification_url || d.verificationUri || "https://www.google.com/device";
+    const a = $("#login-url"); a.href = link; a.textContent = link;
+    $("#login-code").textContent = (d.user_code || "").toUpperCase();
+    $("#login-status").innerHTML = `<span class="spinner"></span>Menunggu login di browser...`;
+    const interval = ((d.interval || 5) * 1000) + 200;
+    clearInterval(state.pollTimer);
+    state.pollTimer = setInterval(pollLogin, interval);
+  }catch(e){ toast(e.message); }
+};
+async function pollLogin(){
+  if (!state.device) return;
+  try{
+    const r = await apiPost("/api/auth/token", {
+      client_id: state.cid, client_secret: state.csec,
+      device_code: state.device.device_code,
+    });
+    if (r.access_token){
+      clearInterval(state.pollTimer); state.pollTimer=null;
+      r.expires_at = Math.floor(Date.now()/1000) + (r.expires_in || 3600);
+      state.token = r; LS.set("ytm_token", r);
+      state.device = null;
+      toast("✅ Login berhasil");
+      go("library");
+    } else if (r.pending || r.error === "authorization_pending" || r.error === "slow_down"){
+      // normal — tunggu user
+    } else if (r.error === "expired_token"){
+      clearInterval(state.pollTimer);
+      $("#login-status").textContent = "Kode expired — klik Mulai Login lagi";
+    } else {
+      $("#login-status").textContent = r.error_description || r.error || "gagal";
+    }
+  }catch(e){
+    console.warn(e);
+  }
+}
+
+/* ---------- LIBRARY (butuh login) ---------- */
+async function renderLibrary(m){
+  if (!state.cid || !state.csec) {
+    m.innerHTML = `<div class="login-card">
+      <h2 style="margin:0 0 8px">📚 Library Pribadi</h2>
+      <p class="muted">Untuk melihat Liked Songs & playlist akunmu,
+      masukkan Client ID + Secret dulu di Settings.</p>
+      <button class="btn-primary" onclick="go('settings')">⚙️ Buka Settings</button>
+    </div>`;
+    return;
+  }
+  if (!state.token) {
+    m.innerHTML = `<div class="login-card">
+      <h2 style="margin:0 0 8px">📚 Login Dulu</h2>
+      <p class="muted">Client ID & Secret sudah tersimpan.<br>Klik tombol di bawah untuk mulai login Google.</p>
+      <button class="btn-primary" onclick="go('settings')">🔑 Mulai Login</button>
+      <p class="muted" style="margin-top:14px">Home, Search, dan Putar lagu
+      <b>tetap bisa dipakai tanpa login</b> — buka tab Home / Search.</p>
+    </div>`;
+    return;
+  }
+  m.innerHTML = `<div class="empty"><span class="spinner"></span> Memuat Library...</div>`;
+  try{
+    const d = await apiGet("/api/library");
+    let html = `<h2 class="section-title">Liked Songs (${d.liked.length})</h2>`;
+    state._liked = d.liked || [];
+    if (d.liked.length){
+      html += `<button class="big-play" onclick="playLiked()">▶</button>`;
+      html += d.liked.slice(0,80).filter(t=>t.videoId)
+        .map(t=>trackRow(t.videoId,t.title,t.artist,t.thumb,t.duration||"","libliked")).join("");
+    } else html += `<div class="empty muted">Belum ada lagu yang disukai</div>`;
+
+    if (d.playlists?.length){
+      html += `<h2 class="section-title">Playlist Kamu (${d.playlists.length})</h2><div class="grid">`;
+      for (const p of d.playlists){
+        html += `<button class="card" onclick="openLibPl('${escAttr(p.playlistId)}','${escAttr(p.title)}')">
+          <img class="thumb" src="${escAttr(p.thumb)}">
+          <p class="t">${esc(p.title)}</p>
+          <p class="s">Playlist · ${esc(String(p.count||""))}</p>
+        </button>`;
+      }
+      html += `</div>`;
+    }
+    if (d.albums?.length){
+      html += `<h2 class="section-title">Album Tersimpan</h2><div class="grid">`;
+      for (const a of d.albums){
+        html += `<button class="card" onclick="state._bid='${escAttr(a.browseId)}';state.history.push('library');state.view='album';render()">
+          <img class="thumb" src="${escAttr(a.thumb)}">
+          <p class="t">${esc(a.title)}</p>
+          <p class="s">${esc(a.artists||"")}${a.year?` · ${a.year}`:""}</p>
+        </button>`;
+      }
+      html += `</div>`;
+    }
+    html += `<hr><button class="btn-secondary" onclick="logout()">Keluar akun</button>`;
+    m.innerHTML = html;
+  }catch(e){
+    if (e.message === "LOGIN_REQUIRED"){
+      state.token=null; LS.del("ytm_token"); render();
+    } else {
+      m.innerHTML = `<div class="empty">Gagal muat Library<br><span class="muted">${esc(e.message)}</span>
+        <br><br><button class="btn-secondary" onclick="logout()">Login ulang</button></div>`;
+    }
+  }
+}
+window.playLiked = ()=>{
+  if (!state._liked?.length) return;
+  state.queue = state._liked.filter(t=>t.videoId).map(t=>({videoId:t.videoId,title:t.title,artist:t.artist,thumb:t.thumb}));
+  state.qIndex=-1; nextTrack(false);
+};
+window.openLibPl = async (pid, title)=>{
+  state._lpid = pid;
+  const m = $("#main");
+  m.innerHTML = `<div class="empty"><span class="spinner"></span></div>`;
+  try{
+    const d = await apiGet(`/api/library/playlist/${encodeURIComponent(pid)}`);
+    state._libPl = d.tracks || [];
+    m.innerHTML = `
+      <div class="pl-head">
+        <img class="cover" src="${escAttr(d.thumb)}">
+        <h2>${esc(d.title || title)}</h2>
+        <p>${d.tracks.length} lagu</p>
+      </div>
+      <button class="big-play" onclick="playLibPl()">▶</button>
+      <div>${d.tracks.filter(t=>t.videoId).map(t=>trackRow(t.videoId,t.title,t.artist,t.thumb,t.duration||"","libpl")).join("")}</div>
+    `;
+  }catch(e){ toast(e.message); }
+};
+window.playLibPl = ()=>{
+  if (!state._libPl?.length) return;
+  state.queue = state._libPl.filter(t=>t.videoId).map(t=>({videoId:t.videoId,title:t.title,artist:t.artist,thumb:t.thumb}));
+  state.qIndex=-1; nextTrack(false);
+};
+
+/* ---------- BOOT ---------- */
+go("home", false);
+</script>
+</body>
+</html>
