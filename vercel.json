@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "env": {
+    "YTMUSIC_OAUTH_BASE64": "@ytmusic-oauth-base64"
+  },
+  "builds": [
+    {
+      "src": "app.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "app.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "index.html"
+    }
+  ]
+}
